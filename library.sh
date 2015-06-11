@@ -5,6 +5,9 @@
 #                                Time Operation                               #
 #                                                                             #
 ###############################################################################
+func_since_1970(){
+    echo `date +"%s"`
+}
 func_cur_date(){
     echo `date +"%Y%m%d"`
 }
@@ -212,9 +215,94 @@ func_git_check_tag(){
 
 	local cur=`pwd`
 	cd $2
+		func_error_cmd git checkout master 
+		func_error_cmd git pull 
 		func_error_cmd git checkout $1
 		if [ ! $? -eq 0 ];then
 			return 1
 		fi
 	cd $cur
+}
+
+###############################################################################
+#                                                                             #
+#                                Daemon Command                               #
+#                                                                             #
+###############################################################################
+
+#$1: pidfile
+#$2: log file
+#$4: commands
+func_daemon_cmd(){
+	local sec=`func_since_1970`
+	local pidfile=$1
+	local stdout="$2.$sec.stdout"
+	local stderr="$2.$sec.stderr"
+	shift 2
+
+	$* 1>$stdout 2>$stderr &
+	local pid=$!
+	echo $pid >$pidfile
+}
+
+#$1: pid
+func_check_pid(){
+	ps -p $1 1>/dev/null 2>&1
+	if [ $? -eq 0 ];then
+		return 0
+	fi
+	return 1
+}
+
+#$1: pid
+#$2: pid desc
+func_exit_no_pid(){
+	func_check_pid  $1
+	if [ ! $? -eq 0 ];then
+		func_red_str "Pid($1:$2) doesn't exist"
+		exit 1
+	fi
+	return 0
+}
+
+#$1: pid file
+#$2: log file
+#$3: executuable binary file name
+#$4: command
+func_start_cmd(){
+	local pidf=$1
+	local logf=$2
+	local name=$3
+	shift 3
+	local cmd=$*
+
+	if [ -e $pidf ];then
+		func_red_str "The PID file has already existed, please check: $pidf"
+		func_yellow_str "It may be running or hasn't delete the PID file when it was stopped last time"
+		exit 1
+	fi
+	func_daemon_cmd $pidf $logf $cmd
+	sleep 1
+	func_exit_no_pid `cat $pidf` "[Fail]${name} is not running!"
+}
+
+#$1: pid file
+func_stop_cmd(){
+	local pidf=$1
+
+	if [ ! -e $pidf ];then
+		func_red_str "The PID file doesn't exist': $pidf"
+		func_yellow_str "It may be not running"
+		exit 1
+	fi
+
+	local pid=`cat $pidf`
+	if [ "$pid" == "1" ];then
+		func_red_str "You are not allowed to stop PID 1 !"
+		exit 1
+	else
+		kill -9 $pid
+		rm -rf $pidf
+	fi
+	return 0
 }
