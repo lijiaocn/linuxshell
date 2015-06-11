@@ -86,7 +86,9 @@ func_error_cmd(){
 		echo  -n -e "\e[41;37m"
 		echo "Error: [$ret] $*"
 		echo  -n -e "\e[0m"
+		exit 1
 	fi
+	return 0
 }
 
 #Input is a string.
@@ -111,6 +113,12 @@ func_red_str(){
 	echo  -n -e "\e[0m"
 }
 
+###############################################################################
+#                                                                             #
+#                       Systemd Service Operation                             #
+#                                                                             #
+###############################################################################
+
 #Start a systemd style Service
 func_start_sd_service(){
 	systemctl start $1
@@ -126,7 +134,7 @@ func_start_sd_service(){
 		func_green_str "            $x"
 	fi
 	return $ret
-}	
+}
 
 #Start a systemd style Service
 func_stop_sd_service(){
@@ -135,4 +143,78 @@ func_stop_sd_service(){
 	local sta=`systemctl status ${1} |grep "Active:"`
 	func_yellow_str "Stopping $1"
 	func_yellow_str "         $sta"
-}	
+}
+
+###############################################################################
+#                                                                             #
+#                            Directory Operation                              #
+#                                                                             #
+###############################################################################
+
+#Create Dirs: $1 $2 $3 ...
+func_create_dirs(){
+	for i in $*
+	do
+		if [ ! -d $i ];then
+			mkdir -p $i
+		fi
+	done
+}
+
+#Force Copy: 
+#$1: Destiation Directory
+#$2,$3,$4,...: Source File or Directories
+func_force_copy(){
+	local dest=$1
+	shift 1
+
+	if [ ! -d $dest ];then
+		func_red_str "Dest Dir doesn't exist: $dest"
+		return 1
+	fi
+	
+	for i in $*
+	do
+		if [ ! -e $i ];then
+			func_red_str "Not Found: $i"
+			return 1
+		fi
+	done
+
+	for i in $*
+	do
+		cp -rf $i $dest/
+	done
+}
+
+###############################################################################
+#                                                                             #
+#                                Git operation                                #
+#                                                                             #
+###############################################################################
+
+#$1: tag
+#$2: local directory
+#$3: respositry url
+func_git_check_tag(){
+	if [ ! -e $2 ];then
+		func_error_cmd git clone $3 $2
+		if [ ! $?  -eq 0 ];then
+			func_red_str "Something is wrong in cloning"
+			return 1
+		fi
+	fi
+
+	if [ ! -d $2 ];then
+		func_red_str "The local respositry is not a directory"
+		return 1
+	fi
+
+	local cur=`pwd`
+	cd $2
+		func_error_cmd git checkout $1
+		if [ ! $? -eq 0 ];then
+			return 1
+		fi
+	cd $cur
+}
