@@ -306,3 +306,35 @@ func_stop_cmd(){
 	fi
 	return 0
 }
+
+#$1: Target executable  file
+#$2: Log path
+#$3: An config Array's name, the Array must be global. Becareful, Just give Name, not value(no $)
+#$4: Other parametes from the command line, [start|stop]
+func_service_template_1(){
+	local TARGET=$1
+	local Logs=$2
+	eval config_2334200776=\${$3[@]}
+	local cmdline=$4
+	CMD="${TARGET} ${config_2334200776[@]}"
+	NAME=`basename ${TARGET}`
+	PID_FILE="${Logs}/${NAME}.pid"
+	LOG_FILE="${Logs}/${NAME}"
+
+	start(){
+		func_start_cmd $PID_FILE $LOG_FILE $NAME $CMD
+	}
+
+	stop(){
+		func_stop_cmd $PID_FILE
+	}
+
+	case $cmdline in
+		(start)
+			start;;
+		(stop)
+			stop;;
+		(*)
+			echo "usage: $0 [stop|start]"
+	esac
+}
