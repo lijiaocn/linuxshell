@@ -320,13 +320,16 @@ func_service_template_1(){
 	NAME=`basename ${TARGET}`
 	PID_FILE="${Logs}/${NAME}.pid"
 	LOG_FILE="${Logs}/${NAME}"
+	OPERATE="${Logs}/${NAME}.operate"
 
 	start(){
 		func_start_cmd $PID_FILE $LOG_FILE $NAME $CMD
+		echo -e "`func_cur_time`: [start] $CMD" >>$OPERATE
 	}
 
 	stop(){
 		func_stop_cmd $PID_FILE
+		echo -e "`func_cur_time`: [stop]" >>$OPERATE
 	}
 
 	case $cmdline in
@@ -337,4 +340,137 @@ func_service_template_1(){
 		(*)
 			echo "usage: $0 [stop|start]"
 	esac
+}
+
+###############################################################################
+#                                                                             #
+#                                Arrary Operation                             #
+#                                                                             #
+###############################################################################
+
+#$1: sep string
+#$2: prefix
+#$3: Array's name, the Array must be global. Becareful, Just give Name, not value(no $)
+#$4: postfix
+func_join_array(){
+	local sep=$1
+	local prefix=$2
+	local postfix=$4
+	eval array_doimgaeg3234553=(\${$3[@]})
+	local len=${#array_doimgaeg3234553[@]}
+
+	if [ $len -eq 1 ];then
+		echo ${array_doimgaeg3234553[@]}
+		return 0
+	fi
+
+	local i=0
+	local str=${prefix}${array_doimgaeg3234553[$i]}${postfix}
+	i=$(($i+1))
+
+	while [ $i -lt $len ]
+	do
+		str=${str}${sep}${prefix}${array_doimgaeg3234553[$i]}${postfix}
+		i=$(($i+1))
+	done
+	echo $str
+	return 0
+}
+
+#if value is in array, return 0, else return 1
+#$1: value
+#$2: Array's name, the Array must be global. Becareful, Just give Name, not value(no $)
+func_in_array(){
+	eval array_adfadfadfgli3323455=(\${$2[@]})
+	for i in ${array_adfadfadfgli3323455[@]}
+	do
+		if [ $i == $1 ];then
+			return 0
+		fi
+	done
+	return 1
+}
+
+###############################################################################
+#                                                                             #
+#                                 System info                                 #
+#                                                                             #
+###############################################################################
+#Get ipv4 address
+func_ipv4_addr(){
+	local ips=`ip addr |grep inet|grep -v inet6| awk '{print $2}'|sed "s/\/.*//"`
+	echo $ips
+}
+
+
+###############################################################################
+#                                                                             #
+#                                 Update Operation                            #
+#                                                                             #
+###############################################################################
+
+#return 0: the file is updated  1: nothing is changed 2:remote is wrong.
+#must checksum by sha1sum
+#$1: local version file
+#$2: remote version url
+#$3: local file path
+#$4: remote file url
+func_update_file(){
+	if [ ! -e $1 ];then
+		func_red_str "Can't found Local Version"
+		exit 1
+	fi
+
+	local lver=`cat $1`
+	if [ "$lver" == "" ];then
+		func_red_str "Local Version is NULL!"
+		exit 1
+	fi
+
+	local rver=`curl $2 2>/dev/null |grep -v \<`
+	if [ "$rver" == "" ];then
+		func_red_str "Can't get Remove Version"
+		exit 1
+	fi
+
+	if [ "$lver" == "$rver" ];then
+		func_green_str "Local Version matches the Remove Version."
+		return 1
+	fi
+
+	local lfile=$3
+	curl -o $lfile  $4 2>/dev/null
+
+	local lsha1=`sha1sum $lfile|awk '{print $1}'`
+	local rsha1=`echo $rver|awk '{print $1}'`
+	
+	if [ "$lsha1" == "$rsha1" ];then
+		func_green_str "The Remove Version file lays: $lfile"
+		return 0
+	else
+		func_red_str "The Remove File dosen't match the Remove Version: $lfile"
+		return 2
+	fi
+}
+
+#get a file and check the sha1 code
+#$1 local file
+#$2 file url
+#$3 sha1 code url
+func_curl_file_sha1(){
+	local rsha1=`curl $3 2>/dev/null|grep -v \<|awk '{print $1}'`
+	if [ "$rsha1" == "" ];then
+		func_red_str "Can't the file sha1 code!"
+		return 1
+	fi
+	curl -o $1 $2 
+	local lsha1=`sha1sum $1|awk '{print $1}'`
+
+	if [ "$lsha1" == "$rsha1" ];then
+		func_green_str "The File lays: $lfile"
+		return 0
+	else
+		func_red_str "The File dosen't match the sha1 code: $1"
+		return 2
+	fi
 }
