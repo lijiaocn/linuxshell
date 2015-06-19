@@ -284,6 +284,9 @@ func_start_cmd(){
 	func_daemon_cmd $pidf $logf $cmd
 	sleep 1
 	func_exit_no_pid `cat $pidf` "[Fail]${name} is not running!"
+	if [ $? -eq 0 ];then
+		return 0
+	fi
 }
 
 #$1: pid file
@@ -324,11 +327,17 @@ func_service_template_1(){
 
 	start(){
 		func_start_cmd $PID_FILE $LOG_FILE $NAME $CMD
+		if [ $? == 0 ];then
+			func_green_str "$TARGET is running"
+		fi
 		echo -e "`func_cur_time`: [start] $CMD" >>$OPERATE
 	}
 
 	stop(){
 		func_stop_cmd $PID_FILE
+		if [ $? == 0 ];then
+			func_red_str "$TARGET is terminated"
+		fi
 		echo -e "`func_cur_time`: [stop]" >>$OPERATE
 	}
 
@@ -429,12 +438,12 @@ func_update_file(){
 
 	local rver=`curl $2 2>/dev/null |grep -v \<`
 	if [ "$rver" == "" ];then
-		func_red_str "Can't get Remove Version"
+		func_red_str "Can't get Remote Version"
 		exit 1
 	fi
 
 	if [ "$lver" == "$rver" ];then
-		func_green_str "Local Version matches the Remove Version."
+		func_green_str "Local Version matches the Remote Version."
 		return 1
 	fi
 
@@ -445,12 +454,18 @@ func_update_file(){
 	local rsha1=`echo $rver|awk '{print $1}'`
 	
 	if [ "$lsha1" == "$rsha1" ];then
-		func_green_str "The Remove Version file lays: $lfile"
+		func_green_str "The Remote Version file lays: $lfile"
 		return 0
 	else
-		func_red_str "The Remove File dosen't match the Remove Version: $lfile"
+		func_red_str "The Remote File dosen't match the Remote Version: $lfile"
 		return 2
 	fi
+}
+
+#$1: local file path
+#$2: remote file url
+func_replace_lfile(){
+	curl -o $1 $2 2>/dev/null
 }
 
 #get a file and check the sha1 code
@@ -473,4 +488,23 @@ func_curl_file_sha1(){
 		func_red_str "The File dosen't match the sha1 code: $1"
 		return 2
 	fi
+}
+
+###############################################################################
+#                                                                             #
+#                         Interactive Operation                               #
+#                                                                             #
+###############################################################################
+#$1: password
+#$2...: cmds
+func_cmd_need_password(){
+	local password=$1
+	shift 1
+	expect -c "
+		spawn $*
+		expect {
+			\"*password:\" {set timeout 300; send \"${password}\r\";}
+			\"*yes/no\" {send \"yes\r\"; exp_continue;}
+		}
+	expect eof"
 }
