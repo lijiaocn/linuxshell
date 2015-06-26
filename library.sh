@@ -508,3 +508,14 @@ func_cmd_need_password(){
 		}
 	expect eof"
 }
+
+#$1: VARNAME
+#$2: prompt
+func_secret_input(){
+	echo -n "$2"
+	stty -echo
+	read $1
+	stty echo
+	echo ""
+}
+
