@@ -3,9 +3,9 @@
 
 declare -a array
 arrary[0]="hello"
-arrary[1]="world"
-arrary[2]="1"
-arrary[3]="2"
+#arrary[1]="world"
+#arrary[2]="1"
+#arrary[3]="2"
 
 
 a=`func_join_array  "," "" arrary ""`
