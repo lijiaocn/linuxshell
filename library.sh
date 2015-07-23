@@ -221,8 +221,9 @@ func_git_check_tag(){
 
 	local cur=`pwd`
 	cd $dir
-		func_error_cmd git checkout $branch
+		func_error_cmd git checkout master
 		func_error_cmd git pull 
+		func_error_cmd git checkout $branch
 		func_error_cmd git checkout $tag
 		if [ ! $? -eq 0 ];then
 			return 1
