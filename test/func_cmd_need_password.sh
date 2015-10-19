@@ -1,7 +1,8 @@
 #!/bin/bash
 . ../library.sh
 
-machines="root@192.168.202.240  root@192.168.202.241 root@192.168.202.242"
+#machines="root@192.168.202.240  root@192.168.202.241 root@192.168.202.242"
+machines="root@172.17.0.1"
 PASSWORD=""
 func_secret_input PASSWORD "PASSWORD:"
 
