@@ -14,7 +14,7 @@ func_gen_config_go(){
 	local cmd=$2
 	shift 2
 	echo "declare -A CONFIGS" >$file
-	$cmd  $* |sed '1d' |sed  -E  's/.*(--[^:]*):(.*)/\#\2\n\1/' | sed -E 's/\[(.*)\]/\1/' | sed -E "s/--(.*)=(.*)/CONFIGS\[\1\]=\'--\1=\2\'/" >>$file
+	$cmd 2>&1 $* |sed '1d' |sed  -E  's/.*(--[^:]*):(.*)/\#\2\n\1/' | sed -E 's/\[(.*)\]/\1/' | sed -E "s/--(.*)=(.*)/CONFIGS\[\1\]=\'--\1=\2\'/" >>$file
 }
 
 ###############################################################################
@@ -258,13 +258,12 @@ func_git_check_tag(){
 #$2: log file
 #$4: commands
 func_daemon_cmd(){
-	local sec=`func_since_1970`
 	local pidfile=$1
-	local stdout="$2.$sec.stdout"
-	local stderr="$2.$sec.stderr"
+	local stdout="$2.stdout"
+	local stderr="$2.stderr"
 	shift 2
 
-	$* 1>$stdout 2>$stderr &
+	$* 1>>$stdout 2>>$stderr &
 	local pid=$!
 	echo $pid >$pidfile
 }
