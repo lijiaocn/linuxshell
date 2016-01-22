@@ -349,19 +349,19 @@ func_service_template_1(){
 	OPERATE="${Logs}/${NAME}.operate"
 
 	start(){
+		echo -e "`func_cur_time`: [start] $CMD" >>$OPERATE
 		func_start_cmd $PID_FILE $LOG_FILE $NAME $CMD
 		if [ $? == 0 ];then
 			func_green_str "$TARGET is running"
 		fi
-		echo -e "`func_cur_time`: [start] $CMD" >>$OPERATE
 	}
 
 	stop(){
+		echo -e "`func_cur_time`: [stop]" >>$OPERATE
 		func_stop_cmd $PID_FILE
 		if [ $? == 0 ];then
 			func_red_str "$TARGET is terminated"
 		fi
-		echo -e "`func_cur_time`: [stop]" >>$OPERATE
 	}
 
 	case $cmdline in
