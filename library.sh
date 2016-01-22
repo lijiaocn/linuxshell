@@ -5,11 +5,11 @@
 #                           Cmd Params Operation                              #
 #                                                                             #
 ###############################################################################
-#Generate config file from go style params
+#Generate config file from k8s style params
 #$1: Saved Config file
 #$2: command
 #$3..:  command params
-func_gen_config_go(){
+func_gen_config_k8s(){
 	local file=$1
 	local cmd=$2
 	shift 2
