@@ -369,8 +369,10 @@ func_service_template_1(){
 			start;;
 		(stop)
 			stop;;
+		(restart)
+			stop;start;;
 		(*)
-			echo "usage: $0 [stop|start]"
+			echo "usage: $0 [stop|start|restart]"
 	esac
 }
 
