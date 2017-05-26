@@ -2,6 +2,98 @@
 
 ###############################################################################
 #                                                                             #
+#                             Openssl Operation                               #
+#                                                                             #
+###############################################################################
+
+func_sign_key(){
+
+}
+
+#$1: keyfile
+#$2: cafile
+#$3: valid_days
+func_self_signed_ca_interactive(){
+	local key=$1
+	local ca=$2
+	local days=$3
+	if [ ! -d `dirname $key` ];then
+		mkdir -p `dirname $key`
+	fi
+	if [ ! -d `dirname $ca` ];then
+		mkdir -p `dirname $ca`
+	fi
+	openssl req  -nodes -new -x509 -days ${days} -keyout ${key} -out ${ca}
+}
+
+#$1: result config file
+#$2: prompt, yes/no
+#$3: bits
+#$4: keyfile
+#$5: email
+#$6: commonName
+#$7: subjectAltName
+func_cert_sign_req_config(){
+	local config_file=$1
+	local dir=`dirname $config_file`
+	if [ ! -d $dir ];then
+		mkdir -p $dir
+	fi
+	
+	local prompt=$2
+	local bits=$3
+	local keyfile=$4
+	local email=$5
+	local commonName=$6
+	local subjectAltName=$7
+	
+	cat > $config_file <<EOF
+[ req ]
+prompt                 = ${prompt}
+default_bits           = ${bits}
+default_keyfile        = ${keyfile}
+distinguished_name     = req_distinguished_name
+attributes             = req_attributes
+x509_extensions        = v3_ca
+
+dirstring_type = nobmp
+
+[ req_distinguished_name ]
+
+countryName                    = Country Name (2 letter code)
+countryName_default            = CN
+countryName_min                = 2
+countryName_max                = 2
+
+localityName                   = Locality Name (eg, city)
+localityName_default           = BeiJing
+
+organizationalUnitName         = Organizational Unit Name (eg, section)
+organizationalUnitName_default = no
+
+commonName                     = Common Name (eg, YOUR name)
+commonName_default             = ${commonName}
+commonName_max                 = 64
+
+emailAddress                   = Email Address
+emailAddress_default           = ${email}
+emailAddress_max               = 40
+
+[ req_attributes ]
+challengePassword              = A challenge password
+challengePassword_min          = 4
+challengePassword_max          = 20
+
+[ v3_ca ]
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer:always
+basicConstraints = CA:true
+subjectAltName=${subjectAltName}
+EOF
+}
+
+###############################################################################
+#                                                                             #
 #                           Cmd Params Operation                              #
 #                                                                             #
 ###############################################################################
