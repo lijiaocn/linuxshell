@@ -1,14 +1,42 @@
 #!/bin/bash
+###############################################################################
+#                                                                             #
+#                             Docker Operation                                #
+#                                                                             #
+###############################################################################
+
+#$1: container name
+func_docker_destroy_container(){
+	local exist=`docker ps -a |awk '{print $NF}'|grep $1`
+	if [[ $exist == "" ]];then
+		return 0
+	fi
+	docker kill $1 >/dev/null 2>&1
+	if [[ $(docker version --format '{{.Server.Version}}') = 17.06.0* ]]; then
+		# Workaround https://github.com/moby/moby/issues/33948.
+		# TODO: remove when 17.06.0 is not relevant anymore
+		DOCKER_API_VERSION=v1.29 docker wait "$1" >/dev/null 2>&1 || true
+	else
+		docker wait "$1" >/dev/null 2>&1 || true
+	fi
+	docker rm -f -v "$1" >/dev/null 2>&1 || true
+}
+
+#$1: imagename:tag
+#ret: 0 exist, 1 not exist
+func_docker_image_exist(){
+	local ret=`docker images $1  |wc |awk '{ print $1 }'`
+	if [[ $ret == "2" ]];then
+		return 0
+	fi
+	return 1
+}
 
 ###############################################################################
 #                                                                             #
 #                             Openssl Operation                               #
 #                                                                             #
 ###############################################################################
-
-func_sign_key(){
-
-}
 
 #$1: keyfile
 #$2: cafile
@@ -192,6 +220,19 @@ func_yellow_cmd(){
 #Input is the command
 #If command is error, display the error
 func_error_cmd(){
+	$*
+	local ret=$?
+	if [ ! $ret -eq 0 ];then
+		echo  -n -e "\033[41;37m"
+		echo "Error: [$ret] $*"
+		echo  -n -e "\033[0m"
+	fi
+	return 0
+}
+
+#Input is the command
+#If command is error, display the error and eixt
+func_fatal_cmd(){
 	$*
 	local ret=$?
 	if [ ! $ret -eq 0 ];then
