@@ -32,6 +32,14 @@ func_docker_image_exist(){
 	return 1
 }
 
+#$1: imagename:tag
+func_docker_destroy_image(){
+	func_docker_image_exist $1
+	if [[ $? == "0" ]];then
+		docker rmi $1
+	fi
+}
+
 ###############################################################################
 #                                                                             #
 #                             Openssl Operation                               #
